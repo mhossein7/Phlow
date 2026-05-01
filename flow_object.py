@@ -328,8 +328,8 @@ class flow_unit():
                 
     def plot_histogram(self,axes = None,is_legend=False,is_norm = True):
         if all(len(v) == 0 for v in self.Data_gfp.values()): raise Exception('Please load and compile data first')
-        if axes and is_norm and len(axes)!=3: raise Exception('The input should have 3 axes')
-        if axes and not is_norm and len(axes)!=2: raise Exception('The input should have 2 axes')
+        if axes is not None and is_norm and len(axes)!=3: raise Exception('The input should have 3 axes')
+        if axes is not None and not is_norm and len(axes)!=2: raise Exception('The input should have 2 axes')
         if axes is None: _ , axes = plt.subplots(3 if is_norm else 2)
         for i,data in enumerate(self.Data_rfp.values()):
             sns.kdeplot(data,ax=axes[0],color = self.red_palette[i],alpha = 0.3,fill=True,linewidth=1.5,common_norm=False,legend = False)
@@ -379,8 +379,8 @@ class flow_unit():
     
     def plot_scatter(self,axes=None,isstd = False,is_norm = True,marker = 'o'):
         if all(len(v) == 0 for v in self.Data_gfp.values()): raise Exception('Please load and compile data first')
-        if axes and len(axes)!=3: raise Exception('The input should be a vector of three axes')
-        if axes and not is_norm and len(axes)!=2: raise Exception('The input should have 2 axes')
+        if axes is not None and is_norm and len(axes)!=3: raise Exception('The input should be a vector of three axes')
+        if axes is not None and not is_norm and len(axes)!=2: raise Exception('The input should have 2 axes')
         if axes is None: _ , axes = plt.subplots(3 if is_norm else 2)
         
         RFP_mets , GFP_mets, Norm_mets = self.compute_pop_metrics()
