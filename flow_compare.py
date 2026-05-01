@@ -175,6 +175,7 @@ def _save_comparison_scatter(
 
 def _save_gfp_histogram_comparison(root_folder, units, plot_label_map, output_filename):
     import matplotlib.pyplot as plt
+    import matplotlib.patches as mpatches
     import numpy as np
     import seaborn as sns
 
@@ -208,7 +209,7 @@ def _save_gfp_histogram_comparison(root_folder, units, plot_label_map, output_fi
     xlim = (float(np.nanmin(combined)), float(np.nanmax(combined)))
     y_max = 0
 
-    for ax, (label, unit) in zip(axes, units.items()):
+    for plot_idx, (ax, (label, unit)) in enumerate(zip(axes, units.items())):
         for idx, data in enumerate(unit.Data_gfp.values()):
             sns.kdeplot(
                 data,
@@ -223,14 +224,33 @@ def _save_gfp_histogram_comparison(root_folder, units, plot_label_map, output_fi
         ax.set_xlabel("log10(GFP)", fontsize=axis_label_size)
         ax.tick_params(axis="both", labelsize=tick_label_size)
         ax.text(
-            0.05,
+            0.95,
             0.95,
             plot_label_map[label],
             transform=ax.transAxes,
-            ha="left",
+            ha="right",
             va="top",
             fontsize=panel_label_size,
         )
+        if plot_idx == 0:
+            handles = [
+                mpatches.Patch(
+                    facecolor=color,
+                    edgecolor=color,
+                    alpha=0.3,
+                    label=condition_label,
+                )
+                for color, condition_label in zip(unit.green_palette, unit.cond_labels)
+            ]
+            leg = ax.legend(
+                handles=handles,
+                loc="upper left",
+                frameon=False,
+                title="Green light intensity\n"+r"($\mu$W/cm$^2$)",
+                fontsize=max(9, tick_label_size - 3),
+                title_fontsize=max(10, tick_label_size - 2),
+            )
+            leg.get_title().set_multialignment('center')
         y_max = max(y_max, ax.get_ylim()[1])
 
     axes[0].set_ylabel("Density", fontsize=axis_label_size)
