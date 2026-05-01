@@ -63,6 +63,26 @@ def _categorical_x_positions(num_points):
     return list(range(1, (num_points * 2) + 1, 2))
 
 
+def _auto_ylim(values, clearance_frac=0.08):
+    clean_values = []
+    for value in values:
+        try:
+            if value == value:
+                clean_values.append(float(value))
+        except TypeError:
+            continue
+    if not clean_values:
+        raise ValueError("Cannot determine automatic y-limits from empty data")
+
+    y_min = min(clean_values)
+    y_max = max(clean_values)
+    span = y_max - y_min
+    if span == 0:
+        span = max(abs(y_min) * 0.1, 0.5)
+    clearance = span * clearance_frac
+    return (y_min - clearance, y_max + clearance)
+
+
 def _save_histograms(unit, label_folder, label):
     import matplotlib.pyplot as plt
 
@@ -111,10 +131,14 @@ def _save_light_scatter_outputs(
     label_folder,
     label,
     light_inputs,
-    gfp_ylim=DEFAULT_GFP_YLIM,
-    mcherry_ylim=DEFAULT_MCHERRY_YLIM,
+    gfp_ylim=None,
+    mcherry_ylim=None,
 ):
     rfp_metrics, gfp_metrics, _ = unit.compute_pop_metrics()
+    if gfp_ylim is None:
+        gfp_ylim = _auto_ylim(gfp_metrics["Mean"])
+    if mcherry_ylim is None:
+        mcherry_ylim = _auto_ylim(rfp_metrics["Mean"])
     return {
         "gfp_vs_light_input": _save_channel_light_scatter(
             light_inputs=light_inputs,
@@ -166,8 +190,8 @@ def run_flow_experiment(
     reverse_numbering=False,
     gain=8,
     light_inputs=None,
-    gfp_ylim=DEFAULT_GFP_YLIM,
-    mcherry_ylim=DEFAULT_MCHERRY_YLIM,
+    gfp_ylim=None,
+    mcherry_ylim=None,
     plot_labels=None,
 ):
     """
@@ -195,9 +219,9 @@ def run_flow_experiment(
         Light input values used on plots. Defaults to [0, 21, 52, 208] when
         num_cond is 4, otherwise [1, ..., num_cond].
     gfp_ylim : tuple[float, float], optional
-        Y-axis limits for GFP scatter plots. Default: (3, 4.5).
+        Y-axis limits for GFP scatter plots. Default: automatic from data.
     mcherry_ylim : tuple[float, float], optional
-        Y-axis limits for mCherry scatter plots. Default: (0, 2).
+        Y-axis limits for mCherry scatter plots. Default: automatic from data.
     plot_labels : list[str], optional
         Labels to use in plot titles instead of folder/strain labels.
 
@@ -380,14 +404,12 @@ def build_arg_parser():
     parser.add_argument(
         "--gfp-ylim",
         type=_parse_ylim,
-        default=DEFAULT_GFP_YLIM,
-        help="GFP scatter y-axis limits as min,max. Default: 3,4.5.",
+        help="GFP scatter y-axis limits as min,max. Default: automatic from data.",
     )
     parser.add_argument(
         "--mcherry-ylim",
         type=_parse_ylim,
-        default=DEFAULT_MCHERRY_YLIM,
-        help="mCherry scatter y-axis limits as min,max. Default: 0,2.",
+        help="mCherry scatter y-axis limits as min,max. Default: automatic from data.",
     )
     return parser
 
@@ -421,6 +443,7 @@ if __name__ == "__main__":
 __all__ = [
     "DEFAULT_GFP_YLIM",
     "DEFAULT_MCHERRY_YLIM",
+    "_auto_ylim",
     "_resolve_plot_labels",
     "load_label_flow_unit",
     "run_flow_experiment",

@@ -151,12 +151,10 @@ If `--plot-labels` is omitted, Phlow uses the folder/strain labels.
 
 ### Scatter Y-Limits
 
-Defaults:
+By default, Phlow calculates scatter y-limits from the plotted data and adds a
+small clearance above and below the observed values.
 
-- GFP: `3,4.5`
-- mCherry: `0,2`
-
-Override them with:
+You can override the automatic limits with:
 
 ```bash
 python flow_pipeline.py /path/to/experiment \
@@ -258,8 +256,6 @@ outputs = run_flow_experiment(
     triplicate=False,
     gain=8,
     light_inputs=[0, 21, 52, 208],
-    gfp_ylim=(3, 4.5),
-    mcherry_ylim=(0, 2),
     plot_labels=["WT", "Mutant"],
 )
 ```
@@ -339,4 +335,3 @@ Available helpers:
 - The default gain is `8`, matching the existing GFP correction formula
   `GFP * 8 / gain`.
 - `FlowCal` must be installed and able to read your `.fcs` files.
-

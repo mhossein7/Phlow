@@ -4,8 +4,7 @@ import re
 
 from flow_pipeline import (
     DEFAULT_LIGHT_INPUTS,
-    DEFAULT_GFP_YLIM,
-    DEFAULT_MCHERRY_YLIM,
+    _auto_ylim,
     _categorical_x_positions,
     _condition_labels,
     _count_fcs_files,
@@ -25,8 +24,8 @@ def compare_labels(
     triplicate=False,
     gain=8,
     light_inputs=None,
-    gfp_ylim=DEFAULT_GFP_YLIM,
-    mcherry_ylim=DEFAULT_MCHERRY_YLIM,
+    gfp_ylim=None,
+    mcherry_ylim=None,
     plot_labels=None,
 ):
     """
@@ -81,6 +80,11 @@ def compare_labels(
             plot_label=plot_label_map[label],
         )
 
+    if gfp_ylim is None:
+        gfp_ylim = _metric_ylim(units, "GFP")
+    if mcherry_ylim is None:
+        mcherry_ylim = _metric_ylim(units, "mCherry")
+
     outputs = {
         "gfp_comparison": _save_comparison_scatter(
             root_folder=root_folder,
@@ -102,6 +106,12 @@ def compare_labels(
             ylim=mcherry_ylim,
             output_filename=f"compare_mcherry_vs_light_input_{_labels_filename_suffix(labels)}.svg",
         ),
+        "gfp_histogram_comparison": _save_gfp_histogram_comparison(
+            root_folder=root_folder,
+            units=units,
+            plot_label_map=plot_label_map,
+            output_filename=f"compare_gfp_histograms_{_labels_filename_suffix(labels)}.svg",
+        ),
     }
     return outputs
 
@@ -112,6 +122,14 @@ def _labels_filename_suffix(labels):
         safe = re.sub(r"[^A-Za-z0-9._-]+", "_", str(label)).strip("_")
         safe_labels.append(safe or "label")
     return "__".join(safe_labels)
+
+
+def _metric_ylim(units, metric_name):
+    values = []
+    for unit in units.values():
+        rfp_metrics, gfp_metrics, _ = unit.compute_pop_metrics()
+        values.extend(gfp_metrics["Mean"] if metric_name == "GFP" else rfp_metrics["Mean"])
+    return _auto_ylim(values)
 
 
 def _save_comparison_scatter(
@@ -149,6 +167,78 @@ def _save_comparison_scatter(
     ax.set_ylim(ylim)
     ax.legend(frameon=False)
 
+    output_path = os.path.join(root_folder, output_filename)
+    fig.savefig(output_path, format="svg", dpi=300)
+    plt.close(fig)
+    return output_path
+
+
+def _save_gfp_histogram_comparison(root_folder, units, plot_label_map, output_filename):
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import seaborn as sns
+
+    num_labels = len(units)
+    fig_width = 4.2 * num_labels
+    fig_height = 3.8
+    subplot_scale = min(fig_width / num_labels, fig_height)
+    tick_label_size = max(12, min(18, (3 * subplot_scale) + 2))
+    axis_label_size = tick_label_size + 2
+    panel_label_size = tick_label_size + 1
+    fig, axes = plt.subplots(
+        1,
+        num_labels,
+        figsize=(fig_width, fig_height),
+        sharex=True,
+        sharey=True,
+        constrained_layout=True,
+    )
+    axes = np.atleast_1d(axes)
+
+    all_gfp = [
+        data
+        for unit in units.values()
+        for data in unit.Data_gfp.values()
+        if len(data) > 0
+    ]
+    if not all_gfp:
+        raise ValueError("No GFP data found for histogram comparison")
+
+    combined = np.concatenate(all_gfp)
+    xlim = (float(np.nanmin(combined)), float(np.nanmax(combined)))
+    y_max = 0
+
+    for ax, (label, unit) in zip(axes, units.items()):
+        for idx, data in enumerate(unit.Data_gfp.values()):
+            sns.kdeplot(
+                data,
+                ax=ax,
+                color=unit.green_palette[idx],
+                alpha=0.3,
+                fill=True,
+                linewidth=1.5,
+                common_norm=False,
+                legend=False,
+            )
+        ax.set_xlabel("log10(GFP)", fontsize=axis_label_size)
+        ax.tick_params(axis="both", labelsize=tick_label_size)
+        ax.text(
+            0.05,
+            0.95,
+            plot_label_map[label],
+            transform=ax.transAxes,
+            ha="left",
+            va="top",
+            fontsize=panel_label_size,
+        )
+        y_max = max(y_max, ax.get_ylim()[1])
+
+    axes[0].set_ylabel("Density", fontsize=axis_label_size)
+    for ax in axes:
+        ax.set_xlim(xlim)
+        ax.set_ylim(0, y_max)
+
+    sns.despine(fig=fig)
     output_path = os.path.join(root_folder, output_filename)
     fig.savefig(output_path, format="svg", dpi=300)
     plt.close(fig)
@@ -212,14 +302,12 @@ def build_arg_parser():
     parser.add_argument(
         "--gfp-ylim",
         type=_parse_ylim,
-        default=DEFAULT_GFP_YLIM,
-        help="GFP scatter y-axis limits as min,max. Default: 3,4.5.",
+        help="GFP scatter y-axis limits as min,max. Default: automatic from data.",
     )
     parser.add_argument(
         "--mcherry-ylim",
         type=_parse_ylim,
-        default=DEFAULT_MCHERRY_YLIM,
-        help="mCherry scatter y-axis limits as min,max. Default: 0,2.",
+        help="mCherry scatter y-axis limits as min,max. Default: automatic from data.",
     )
     return parser
 

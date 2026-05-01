@@ -1,10 +1,14 @@
-
+import contextlib
+import io
 import numpy as np 
 from matplotlib import pyplot as plt
-import seaborn as sns
 import FlowCal
 from matplotlib.legend_handler import HandlerTuple 
 import matplotlib.patches as mpatches
+
+
+with contextlib.redirect_stderr(io.StringIO()):
+    import seaborn as sns
 
 
 
