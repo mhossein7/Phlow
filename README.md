@@ -30,10 +30,13 @@ workflow and as importable Python utilities.
 
 ```text
 .
-├── flow_object.py      # Core flow_unit class, plotting, metrics, capacity code
-├── flow_organize.py    # File organization and renaming helpers
-├── flow_pipeline.py    # Main organization + per-label output pipeline
-├── flow_compare.py     # Multi-label comparison and individualized replotting
+├── pyproject.toml
+├── phlow/
+│   ├── cli.py           # Top-level phlow / Phlow command-line interface
+│   ├── flow_object.py   # Core flow_unit class, plotting, metrics, capacity code
+│   ├── flow_organize.py # File organization and renaming helpers
+│   ├── flow_pipeline.py # Main organization + per-label output pipeline
+│   └── flow_compare.py  # Multi-label comparison and individualized replotting
 └── README.md
 ```
 
@@ -48,10 +51,10 @@ seaborn
 FlowCal
 ```
 
-Install dependencies with your preferred environment manager. For example:
+Install the package in editable mode from the repository root:
 
 ```bash
-pip install numpy matplotlib seaborn FlowCal
+pip install -e .
 ```
 
 ## Data Assumptions
@@ -82,7 +85,7 @@ show the real light input values.
 
 ## Main Pipeline
 
-Use `flow_pipeline.py` when you want to organize raw files and generate all
+Use `phlow run` when you want to organize raw files and generate all
 basic outputs.
 
 ### Raw `.fcs` Files in Root Folder
@@ -90,7 +93,7 @@ basic outputs.
 If your root folder contains raw `.fcs` files that still need to be organized:
 
 ```bash
-python flow_pipeline.py /path/to/experiment \
+phlow run --address /path/to/experiment \
   --labels strainA strainB strainC
 ```
 
@@ -108,17 +111,18 @@ This will:
 If your root folder already contains label folders, labels are optional:
 
 ```bash
-python flow_pipeline.py /path/to/experiment
+phlow run --address /path/to/experiment
 ```
 
 Only subfolders containing `.fcs` files are treated as labels.
+If `--address` is omitted, Phlow uses the current working directory.
 
 ### Triplicates
 
 Use `--triplicate` when each condition has three replicate `.fcs` files:
 
 ```bash
-python flow_pipeline.py /path/to/experiment \
+phlow run --address /path/to/experiment \
   --labels strainA strainB \
   --triplicate
 ```
@@ -128,7 +132,7 @@ With `num_cond=4`, this expects `12` files per label.
 ### Custom Condition Count and Light Inputs
 
 ```bash
-python flow_pipeline.py /path/to/experiment \
+phlow run --address /path/to/experiment \
   --labels strainA strainB \
   --num-cond 5 \
   --light-inputs 0,10,25,50,100
@@ -142,7 +146,7 @@ Folder names are used for file loading. Plot labels are used only in legends and
 display text.
 
 ```bash
-python flow_pipeline.py /path/to/experiment \
+phlow run --address /path/to/experiment \
   --labels strain_folder_A strain_folder_B \
   --plot-labels "WT" "Mutant"
 ```
@@ -157,7 +161,7 @@ small clearance above and below the observed values.
 You can override the automatic limits with:
 
 ```bash
-python flow_pipeline.py /path/to/experiment \
+phlow run --address /path/to/experiment \
   --labels strainA strainB \
   --gfp-ylim 2.8,4.8 \
   --mcherry-ylim 0,2.5
@@ -168,7 +172,7 @@ python flow_pipeline.py /path/to/experiment \
 File numbering is not reversed unless you explicitly request it:
 
 ```bash
-python flow_pipeline.py /path/to/experiment \
+phlow run --address /path/to/experiment \
   --labels strainA strainB \
   --reverse-numbering
 ```
@@ -193,11 +197,11 @@ Scatter plots are saved as SVG at `dpi=300`.
 
 ## Compare Labels
 
-Use `flow_compare.py` when your experiment is already organized into label
+Use `phlow compare` when your experiment is already organized into label
 folders and you want comparison plots.
 
 ```bash
-python flow_compare.py /path/to/experiment \
+phlow compare --address /path/to/experiment \
   --labels strainA strainB strainC
 ```
 
@@ -221,19 +225,19 @@ In comparison plots:
 Example with display labels:
 
 ```bash
-python flow_compare.py /path/to/experiment \
+phlow compare --address /path/to/experiment \
   --labels strain_folder_A strain_folder_B \
   --plot-labels "WT" "Mutant"
 ```
 
 ## Individualized Replotting
 
-`flow_compare.py` also works as an individualized plot processor. If you pass
+`phlow compare` also works as an individualized plot processor. If you pass
 exactly one label, it regenerates that label's histograms and scatter plots in
 the label folder instead of writing comparison plots to the root folder.
 
 ```bash
-python flow_compare.py /path/to/experiment \
+phlow compare --address /path/to/experiment \
   --labels strainA \
   --gfp-ylim 3.1,4.2 \
   --mcherry-ylim 0.2,1.7
@@ -247,7 +251,7 @@ and you want to adjust only that strain's plots.
 You can call the pipeline directly from Python:
 
 ```python
-from flow_pipeline import run_flow_experiment
+from phlow.flow_pipeline import run_flow_experiment
 
 outputs = run_flow_experiment(
     root_folder="/path/to/experiment",
@@ -263,7 +267,7 @@ outputs = run_flow_experiment(
 Compare labels from Python:
 
 ```python
-from flow_compare import compare_labels
+from phlow.flow_compare import compare_labels
 
 outputs = compare_labels(
     root_folder="/path/to/experiment",
@@ -294,7 +298,7 @@ It supports:
 Basic usage:
 
 ```python
-from flow_object import flow_unit
+from phlow.flow_object import flow_unit
 
 unit = flow_unit("strainA", "WT")
 unit.set_paths("/path/to/experiment/strainA/sample-")
@@ -311,7 +315,7 @@ capacity = unit.compute_CC()
 `flow_organize.py` provides reusable helpers:
 
 ```python
-from flow_organize import (
+from phlow.flow_organize import (
     organize_fcs_files,
     normalize_filenames,
     normalize_in_all_subfolders,

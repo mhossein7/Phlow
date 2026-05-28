@@ -2,7 +2,7 @@ import argparse
 import os
 import re
 
-from flow_pipeline import (
+from .flow_pipeline import (
     DEFAULT_LIGHT_INPUTS,
     _auto_ylim,
     _categorical_x_positions,
@@ -289,8 +289,10 @@ def build_arg_parser():
     parser.add_argument(
         "-n",
         "--num-cond",
+        "--num_cond",
         type=int,
         default=4,
+        dest="num_cond",
         help="Number of conditions per label. Default: 4.",
     )
     parser.add_argument(

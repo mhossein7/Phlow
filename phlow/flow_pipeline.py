@@ -2,7 +2,7 @@ import argparse
 import os
 import re
 
-from flow_organize import (
+from .flow_organize import (
     normalize_in_all_subfolders,
     organize_fcs_files,
     reverse_fcs_numbering,
@@ -168,7 +168,7 @@ def load_label_flow_unit(
     cond_labels,
     plot_label=None,
 ):
-    from flow_object import flow_unit
+    from .flow_object import flow_unit
 
     folder = _label_folder(root_folder, label)
     unit = flow_unit(str(label), str(plot_label if plot_label is not None else label))
@@ -365,8 +365,10 @@ def build_arg_parser():
     parser.add_argument(
         "-n",
         "--num-cond",
+        "--num_cond",
         type=int,
         default=4,
+        dest="num_cond",
         help="Number of conditions per label. Default: 4.",
     )
     parser.add_argument(
