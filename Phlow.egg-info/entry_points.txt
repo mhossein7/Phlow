@@ -1,0 +1,3 @@
+[console_scripts]
+Phlow = phlow.cli:main
+phlow = phlow.cli:main

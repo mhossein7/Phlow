@@ -1,3 +1,14 @@
+Metadata-Version: 2.4
+Name: Phlow
+Version: 0.1.0
+Summary: Tools for organizing, analyzing, and comparing flow cytometry .fcs experiments.
+Requires-Python: >=3.9
+Description-Content-Type: text/markdown
+Requires-Dist: FlowCal
+Requires-Dist: matplotlib
+Requires-Dist: numpy
+Requires-Dist: seaborn
+
 # Phlow
 
 Phlow is a small Python toolkit for organizing and analyzing flow cytometry `.fcs`
@@ -5,9 +16,8 @@ experiments. It can sort raw experiment files into label folders, read gated GFP
 and mCherry/RFP data with FlowCal, generate per-strain summary plots, and create
 comparison plots across strains.
 
-The project is now packaged as `Phlow`. After installation, the top-level
-terminal command is `phlow` or `Phlow`, with subcommands that call the original
-pipeline and comparison code.
+The project is built around simple scripts, so it works both as a command-line
+workflow and as importable Python utilities.
 
 ## Features
 
@@ -58,54 +68,6 @@ Install the package in editable mode from the repository root:
 pip install -e .
 ```
 
-This installs two equivalent command names:
-
-```bash
-phlow --help
-Phlow --help
-```
-
-You can also run the package without installing the console script:
-
-```bash
-python -m phlow --help
-```
-
-## Command-Line Layer
-
-The package CLI lives in `phlow/cli.py` and provides two subcommands:
-
-```text
-phlow run
-phlow compare
-```
-
-Both commands accept `--address`, which is the path to the experiment's mother
-folder. If `--address` is omitted, Phlow uses the current working directory.
-
-Both commands also share the main analysis options:
-
-```text
---labels label1 label2 ...
---num-cond 4
---num_cond 4
---triplicate
---gain 8
---light-inputs 0,21,52,208
---plot-labels "WT" "Mutant"
---gfp-ylim 2.8,4.8
---mcherry-ylim 0,2.5
-```
-
-`--num-cond` and `--num_cond` are equivalent.
-
-The CLI is a thin layer over the existing modules:
-
-- `phlow run` calls `phlow.flow_pipeline.run_flow_experiment(...)`.
-- `phlow compare` calls `phlow.flow_compare.compare_labels(...)`.
-- `phlow run --reverse-numbering` also uses the file-renaming helpers in
-  `phlow.flow_organize`.
-
 ## Data Assumptions
 
 Phlow expects `.fcs` filenames to end with a numeric suffix:
@@ -134,8 +96,8 @@ show the real light input values.
 
 ## Main Pipeline
 
-Use `phlow run` when you want to organize raw files and generate all basic
-per-label outputs.
+Use `phlow run` when you want to organize raw files and generate all
+basic outputs.
 
 ### Raw `.fcs` Files in Root Folder
 
@@ -155,14 +117,6 @@ This will:
 5. Read and compile flow data.
 6. Save plots inside each label folder.
 
-If `--address` is not provided, the same command runs against the current
-working directory:
-
-```bash
-cd /path/to/experiment
-phlow run --labels strainA strainB strainC
-```
-
 ### Already Organized Label Folders
 
 If your root folder already contains label folders, labels are optional:
@@ -171,9 +125,8 @@ If your root folder already contains label folders, labels are optional:
 phlow run --address /path/to/experiment
 ```
 
-Only subfolders containing `.fcs` files are treated as labels. In this mode,
-Phlow skips organization and normalization and only regenerates plots for each
-label folder.
+Only subfolders containing `.fcs` files are treated as labels.
+If `--address` is omitted, Phlow uses the current working directory.
 
 ### Triplicates
 
@@ -261,13 +214,6 @@ folders and you want comparison plots.
 ```bash
 phlow compare --address /path/to/experiment \
   --labels strainA strainB strainC
-```
-
-With no `--address`, comparison also defaults to the current working directory:
-
-```bash
-cd /path/to/experiment
-phlow compare --labels strainA strainB strainC
 ```
 
 This saves root-level comparison plots:
