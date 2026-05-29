@@ -147,16 +147,29 @@ def _save_comparison_scatter(
     fig, ax = plt.subplots(figsize=(6.0, 4.2), constrained_layout=True)
     x_positions = _categorical_x_positions(len(light_inputs))
     markers = ["o", "s", "^", "D", "v", "P", "X", "*", "<", ">"]
+    dash_patterns = [
+        (3, 2),
+        (5, 2),
+        (7, 3),
+        (2, 2, 8, 2),
+        (8, 2, 2, 2),
+        (10, 3),
+        (4, 2, 1, 2),
+        (6, 2, 1, 2, 1, 2),
+    ]
     color = "green" if metric_name == "GFP" else "red"
 
     for idx, (label, unit) in enumerate(units.items()):
         rfp_metrics, gfp_metrics, _ = unit.compute_pop_metrics()
         means = gfp_metrics["Mean"] if metric_name == "GFP" else rfp_metrics["Mean"]
-        ax.scatter(
+        ax.plot(
             x_positions,
             means,
             color=color,
             marker=markers[idx % len(markers)],
+            linestyle=(0, dash_patterns[idx % len(dash_patterns)]),
+            linewidth=1.3,
+            markersize=6,
             label=plot_label_map[label],
         )
 

@@ -73,17 +73,20 @@ python -m phlow --help
 
 ## Command-Line Layer
 
-The package CLI lives in `phlow/cli.py` and provides two subcommands:
+The package CLI lives in `phlow/cli.py` and provides three subcommands:
 
 ```text
 phlow run
 phlow compare
+phlow g-compare
 ```
 
-Both commands accept `--address`, which is the path to the experiment's mother
-folder. If `--address` is omitted, Phlow uses the current working directory.
+`phlow run` and `phlow compare` accept `--address`, which is the path to one
+experiment's mother folder. If `--address` is omitted, Phlow uses the current
+working directory. `phlow g-compare` accepts `--addresses`, a list of two or
+more experiment mother folders.
 
-Both commands also share the main analysis options:
+The commands share the main analysis options:
 
 ```text
 --labels label1 label2 ...
@@ -103,6 +106,7 @@ The CLI is a thin layer over the existing modules:
 
 - `phlow run` calls `phlow.flow_pipeline.run_flow_experiment(...)`.
 - `phlow compare` calls `phlow.flow_compare.compare_labels(...)`.
+- `phlow g-compare` calls `phlow.global_compare.global_compare(...)`.
 - `phlow run --reverse-numbering` also uses the file-renaming helpers in
   `phlow.flow_organize`.
 
@@ -311,6 +315,94 @@ phlow compare --address /path/to/experiment \
 This is useful when the global pipeline settings were not ideal for one strain
 and you want to adjust only that strain's plots.
 
+## Global Comparison Across Days
+
+Use `phlow g-compare` when you want to compare flow data collected in different
+experiment folders, such as measurements from different days.
+
+The command expects one label per address, in the same order:
+
+```bash
+phlow g-compare \
+  --addresses /path/to/day1 /path/to/day2 /path/to/day3 \
+  --labels strainA strainA strainA
+```
+
+This loads:
+
+```text
+/path/to/day1/strainA
+/path/to/day2/strainA
+/path/to/day3/strainA
+```
+
+The command saves identical global comparison outputs into a comparison-specific
+subfolder inside `Global comparisons` for every address. The subfolder name is
+built from the ordered labels, such as `strainA-strainA-strainA`:
+
+```text
+/path/to/day1/Global comparisons/strainA-strainA-strainA/
+/path/to/day2/Global comparisons/strainA-strainA-strainA/
+/path/to/day3/Global comparisons/strainA-strainA-strainA/
+```
+
+Global comparison outputs include:
+
+```text
+global_compare_gfp_vs_light_input_*.svg
+global_compare_mcherry_vs_light_input_*.svg
+global_compare_gfp_histograms_*.svg
+```
+
+### Global Gains and Triplicates
+
+By default, every address uses gain `8` and `triplicate=False`.
+
+To provide per-address gains:
+
+```bash
+phlow g-compare \
+  --addresses /path/to/day1 /path/to/day2 /path/to/day3 \
+  --labels strainA strainA strainA \
+  --gain 1 8 64
+```
+
+To provide per-address triplicate settings:
+
+```bash
+phlow g-compare \
+  --addresses /path/to/day1 /path/to/day2 /path/to/day3 \
+  --labels strainA strainA strainA \
+  --triplicates true false true
+```
+
+The number of values passed to `--labels`, `--gain`, and `--triplicates` must
+match the number of values passed to `--addresses`.
+
+### Global Plot Labels
+
+If `--plot-labels` is omitted, global comparison legends use the label plus the
+experiment folder name, for example `strainA (day1)`.
+
+You can override those display labels:
+
+```bash
+phlow g-compare \
+  --addresses /path/to/day1 /path/to/day2 \
+  --labels strainA strainA \
+  --plot-labels "Day 1" "Day 2"
+```
+
+You can also customize the scatter plot y-axis labels:
+
+```bash
+phlow g-compare \
+  --addresses /path/to/day1 /path/to/day2 \
+  --labels strainA strainA \
+  --GFP-y-label "Mean GFP" \
+  --mCherry-y-label "Mean mCherry"
+```
+
 ## Python API
 
 You can call the pipeline directly from Python:
@@ -338,6 +430,20 @@ outputs = compare_labels(
     root_folder="/path/to/experiment",
     labels=["strainA", "strainB"],
     plot_labels=["WT", "Mutant"],
+)
+```
+
+Global comparison from Python:
+
+```python
+from phlow.global_compare import global_compare
+
+outputs = global_compare(
+    addresses=["/path/to/day1", "/path/to/day2"],
+    labels=["strainA", "strainA"],
+    gains=[8, 64],
+    triplicates=[False, True],
+    plot_labels=["Day 1", "Day 2"],
 )
 ```
 

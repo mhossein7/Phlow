@@ -3,6 +3,18 @@ import os
 
 from .flow_compare import compare_labels
 from .flow_pipeline import _parse_light_inputs, _parse_ylim, run_flow_experiment
+from .global_compare import global_compare
+
+
+def _parse_bool(value):
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "t", "yes", "y"}:
+        return True
+    if normalized in {"0", "false", "f", "no", "n"}:
+        return False
+    raise argparse.ArgumentTypeError(
+        "triplicates values must be booleans, e.g. true false or 1 0"
+    )
 
 
 def _add_common_arguments(parser, labels_required):
@@ -89,6 +101,81 @@ def build_arg_parser():
     _add_common_arguments(compare_parser, labels_required=True)
     compare_parser.set_defaults(func=_compare)
 
+    global_compare_parser = subparsers.add_parser(
+        "g-compare",
+        help="Compare labels across experiment folders from different days.",
+    )
+    global_compare_parser.add_argument(
+        "--addresses",
+        nargs="+",
+        required=True,
+        help="Two or more mother folders to compare.",
+    )
+    global_compare_parser.add_argument(
+        "-l",
+        "--labels",
+        nargs="+",
+        required=True,
+        help="One label per address, in the same order as --addresses.",
+    )
+    global_compare_parser.add_argument(
+        "-n",
+        "--num-cond",
+        "--num_cond",
+        type=int,
+        default=4,
+        dest="num_cond",
+        help="Number of conditions per label. Default: 4.",
+    )
+    global_compare_parser.add_argument(
+        "-g",
+        "--gain",
+        nargs="+",
+        type=float,
+        help="One gain per address. Defaults to 8 for every address.",
+    )
+    global_compare_parser.add_argument(
+        "--triplicates",
+        nargs="+",
+        type=_parse_bool,
+        help="One true/false value per address. Defaults to false for every address.",
+    )
+    global_compare_parser.add_argument(
+        "--light-inputs",
+        type=_parse_light_inputs,
+        help="Comma-separated light input values, e.g. '0,21,52,208'.",
+    )
+    global_compare_parser.add_argument(
+        "--plot-labels",
+        nargs="+",
+        help="Labels to show in plots/legends. Defaults to label plus folder name.",
+    )
+    global_compare_parser.add_argument(
+        "--gfp-ylim",
+        type=_parse_ylim,
+        help="GFP scatter y-axis limits as min,max. Default: automatic from data.",
+    )
+    global_compare_parser.add_argument(
+        "--mcherry-ylim",
+        type=_parse_ylim,
+        help="mCherry scatter y-axis limits as min,max. Default: automatic from data.",
+    )
+    global_compare_parser.add_argument(
+        "--GFP-y-label",
+        "--gfp-y-label",
+        default="Mean log10(GFP)",
+        dest="gfp_y_label",
+        help="Y-axis label for the global GFP comparison plot.",
+    )
+    global_compare_parser.add_argument(
+        "--mCherry-y-label",
+        "--mcherry-y-label",
+        default="Mean log10(mCherry)",
+        dest="mcherry_y_label",
+        help="Y-axis label for the global mCherry comparison plot.",
+    )
+    global_compare_parser.set_defaults(func=_global_compare)
+
     return parser
 
 
@@ -129,6 +216,23 @@ def _compare(args):
         gfp_ylim=args.gfp_ylim,
         mcherry_ylim=args.mcherry_ylim,
         plot_labels=args.plot_labels,
+    )
+    _print_nested_outputs(outputs)
+
+
+def _global_compare(args):
+    outputs = global_compare(
+        addresses=args.addresses,
+        labels=args.labels,
+        num_cond=args.num_cond,
+        gains=args.gain,
+        triplicates=args.triplicates,
+        light_inputs=args.light_inputs,
+        gfp_ylim=args.gfp_ylim,
+        mcherry_ylim=args.mcherry_ylim,
+        plot_labels=args.plot_labels,
+        gfp_y_label=args.gfp_y_label,
+        mcherry_y_label=args.mcherry_y_label,
     )
     _print_nested_outputs(outputs)
 

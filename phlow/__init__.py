@@ -1,6 +1,6 @@
 """Phlow: small tools for flow cytometry .fcs organization and analysis."""
 
-__all__ = ["compare_labels", "flow_unit", "run_flow_experiment"]
+__all__ = ["compare_labels", "flow_unit", "global_compare", "run_flow_experiment"]
 
 
 def __getattr__(name):
@@ -12,6 +12,10 @@ def __getattr__(name):
         from .flow_object import flow_unit
 
         return flow_unit
+    if name == "global_compare":
+        from .global_compare import global_compare
+
+        return global_compare
     if name == "run_flow_experiment":
         from .flow_pipeline import run_flow_experiment
 
